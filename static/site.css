@@ -6,11 +6,11 @@
 @import "./auth.css";
 @import "./profile.css";
 
-#views {
+/* #views {
     display: none;
-}
+} */
 
 
-#guest-nav, #user-nav {
+/* #guest-nav, #user-nav {
     display: none;
-}
+} */
