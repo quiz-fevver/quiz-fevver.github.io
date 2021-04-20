@@ -1,5 +1,6 @@
 # Quiz System
-System for create, manage and solve diff types of quiz with free access
+System for create, manage and solve diff types of quiz with free access .
+
 
 ## Features
 * Registration
@@ -24,4 +25,5 @@ System for create, manage and solve diff types of quiz with free access
 * Profile Page
 * Quiz Editor Page
 
+## Workshop SPA - All Rights Reserved by SoftUni Team - Viktor Kostadinov ##
 
