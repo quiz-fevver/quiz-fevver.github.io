@@ -15,7 +15,7 @@ const editorTemplate = (data, index, onSave, onCancel) => html`
     <textarea class="input editor-input editor-text" name="text" placeholder="Enter question"
         .value=${data.text}></textarea>
 
-    ${createAnswerList(data.answers, index, data.correctIndex)}
+    ${createAnswerList(data, index)}
 
 </form>
 `;
@@ -25,7 +25,7 @@ const viewTemplate = (data, index, onEdit, onDelete) => html`
 <div class="layout">
     <div class="question-control">
         <button @click=${onEdit} class="input submit action"><i class="fas fa-edit"></i> Edit</button>
-        <button @click=${() => onDelete(index)} class="input submit action"><i class="fas fa-trash-alt"></i>
+        <button @click=${()=> onDelete(index)} class="input submit action"><i class="fas fa-trash-alt"></i>
             Delete</button>
     </div>
     <h3>Question ${index + 1}</h3>
@@ -53,6 +53,8 @@ const radioView = (value, checked) => html`
 //<div class="loading-overlay working"></div>
 
 export function createQuestion(question, removeQuestion) {
+    let currentQuestions = copyQuestion(question)
+    
     let index = 0;
     let editorActive = false;
     const element = document.createElement('article');
@@ -92,14 +94,22 @@ export function createQuestion(question, removeQuestion) {
 
     function onCancel() {
         editorActive = false;
+        currentQuestions = copyQuestion(question)
         showView();
     }
 
     function showView() {
-        render(viewTemplate(question, index, onEdit, removeQuestion), element);
+        render(viewTemplate(currentQuestions, index, onEdit, removeQuestion), element);
     }
 
     function showEditor() {
-        render(editorTemplate(question, index, onSave, onCancel), element);
+        render(editorTemplate(currentQuestions, index, onSave, onCancel), element);
     }
+}
+
+function copyQuestion(question){
+    const currentQuestions = Object.assign({}, question);
+    currentQuestions.answers = currentQuestions.answers.slice();
+
+    return currentQuestions;
 }

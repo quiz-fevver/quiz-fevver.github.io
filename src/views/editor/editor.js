@@ -1,55 +1,43 @@
 import { html } from '../../lib.js'
 import { createQuestion } from './question.js';
+import { createList } from './list.js';
+import { createQuiz, updateQuiz, getQuizById, getQuestionByQuizId } from '../../api/data.js'
 
-const template = (questions, addQuestion) => html`
+
+const template = (quiz, onSave) => html`
 <section id="editor">
 
     <header class="pad-large">
-        <h1>New quiz</h1>
+        <h1>${quiz ? 'Edit quiz' : 'New quiz'}</h1>
     </header>
 
     <div class="pad-large alt-page">
-        <form>
+        <form @submit=${onSave}>
             <label class="editor-label layout">
                 <span class="label-col">Title:</span>
-                <input class="input i-med" type="text" name="title"></label>
+                <input class="input i-med" type="text" name="title" .value=${quiz ? quiz.title : '' }></label>
             <label class="editor-label layout">
                 <span class="label-col">Topic:</span>
-                <select class="input i-med" name="topic">
-                    <option value="all">All Categories</option>
-                    <option value="it">Languages</option>
-                    <option value="hardware">Hardware</option>
-                    <option value="software">Tools and Software</option>
+                <select class="input i-med" name="topic" .value=${quiz ? quiz.topic : '0' }>
+                    <option value="0">-- Select category --</option>
+                    <option value="it" ?checked=${quiz && quiz.topic=='it' }>Languages</option>
+                    <option value="hardware" ?checked=${quiz && quiz.topic=='hardware' }>Hardware</option>
+                    <option value="software" ?checked=${quiz && quiz.topic=='software' }>Tools and Software</option>
                 </select>
+            </label>
+            <label class="editor-label layout">
+                <span class="label-col">Description:</span>
+                <textarea class="input" name="description" .value=${quiz ? quiz.description : '' }></textarea>
             </label>
             <input class="input submit action" type="submit" value="Save">
         </form>
     </div>
 
-    <header class="pad-large">
-        <h2>Questions</h2>
-    </header>
-
-    ${questionList(questions, addQuestion)}
+    ${quiz ? createList(quiz.questions) : ''}
 
 </section>
 `;
 
-const questionList = (questions, addQuestion) => html`
-<div class="pad-large alt-page">
-
-    ${questions}
-
-    <article class="editor-question">
-        <div class="editor-input">
-            <button @click=${addQuestion} class="input submit action">
-                <i class="fas fa-plus-circle"></i>
-                Add question
-            </button>
-        </div>
-    </article>
-</div>
-`;
 
 const questions = [{
     text: 'is this first question',
@@ -72,27 +60,34 @@ const questions = [{
 ];
 
 export async function editorPage(ctx) {
-    const currentQuestions = questions.map(q => createQuestion(q, removeQuestion));
-    update();
-
-    function addQuestion() {
-        currentQuestions.push(createQuestion({
-            text: '',
-            answers: [],
-            correctIndex: 0
-        }, removeQuestion.bind(null, currentQuestions.length + 1)));
-        update();
+    const quizId = ctx.params.id
+    let quiz = null;
+    if (quizId) {
+        quiz = {
+            title: 'Test question',
+            topic: 'hardware',
+            questions,
+        }
     }
 
-    function update() {
-        ctx.render(template(currentQuestions.map((c,i) => c(i)), addQuestion, removeQuestion));
-    }
+    ctx.render(template(quiz, onSave))
 
-    function removeQuestion(index) {
-        const confirmed = confirm('Are you sure you want to delete this question');
-        if (confirmed) {
-            currentQuestions.splice(index, 1);
-            update();
+    async function onSave(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const title = formData.get('title');
+        const topic = formData.get('topic');
+        const description = formData.get('description');
+        const data = {
+            title,
+            topic,
+            description,
+        }
+        if (quizId) {
+            await updateQuiz(quizId, data)
+        } else {
+           const result =  await createQuiz(data);
+           ctx.page.redirect('/edit/' + result.objectId)
         }
     }
 
