@@ -1,5 +1,8 @@
 import { html, render } from '../../lib.js'
 import { createAnswerList } from './answer.js';
+import { createOverlay } from '../common/loader.js'
+import { createQuestion as apiCreate, updateQuestion } from '../../api/data.js';
+
 
 
 const editorTemplate = (data, index, onSave, onCancel) => html`
@@ -25,7 +28,7 @@ const viewTemplate = (data, index, onEdit, onDelete) => html`
 <div class="layout">
     <div class="question-control">
         <button @click=${onEdit} class="input submit action"><i class="fas fa-edit"></i> Edit</button>
-        <button @click=${()=> onDelete(index)} class="input submit action"><i class="fas fa-trash-alt"></i>
+        <button @click=${() => onDelete(index)} class="input submit action"><i class="fas fa-trash-alt"></i>
             Delete</button>
     </div>
     <h3>Question ${index + 1}</h3>
@@ -52,11 +55,11 @@ const radioView = (value, checked) => html`
 
 //<div class="loading-overlay working"></div>
 
-export function createQuestion(question, removeQuestion) {
+export function createQuestion(quizId, question, removeQuestion,updateCount, edit) {
     let currentQuestions = copyQuestion(question)
-    
+
     let index = 0;
-    let editorActive = false;
+    let editorActive = edit || false;
     const element = document.createElement('article');
     element.className = 'editor-question';
 
@@ -88,8 +91,42 @@ export function createQuestion(question, removeQuestion) {
 
     async function onSave() {
         const formData = new FormData(element.querySelector('form'));
-        const data = [...formData.entries()].reduce((a, [k, v]) => Object.assign(a, { [k]: v }), {});
-        console.log(data);
+        const data = [...formData.entries()]
+        console.log(data)
+
+        const answers = data.filter(([k, v]) => k.includes('answer-'))
+            .reduce((a, [k, v]) => {
+                const index = Number(k.split('-')[1])
+                a[index] = v;
+                return a;
+            }, []);
+
+        const body = {
+            text: formData.get('text'),
+            answers,
+            correctIndex: Number(data.find(([k, v]) => k.includes('question-'))[1]),
+        }
+        const loader = createOverlay();
+        try {
+            element.appendChild(loader);
+            if (question.objectId) {
+                //update
+                await updateQuestion(question.objectId, body);
+            } else {
+                //create
+                const result = await apiCreate(quizId, body)
+                updateCount();
+                question.objectId = result.objectId;
+            }
+            Object.assign(question, body)
+            currentQuestions = copyQuestion(question);
+            editorActive = false;
+            update(index);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            loader.remove();
+        }
     }
 
     function onCancel() {
@@ -99,7 +136,12 @@ export function createQuestion(question, removeQuestion) {
     }
 
     function showView() {
-        render(viewTemplate(currentQuestions, index, onEdit, removeQuestion), element);
+        const onDelete = async (index)=> {
+           const loader = createOverlay(); 
+           element.appendChild(loader);
+           await removeQuestion(index, question.objectId);
+        }
+        render(viewTemplate(currentQuestions, index, onEdit, onDelete), element);
     }
 
     function showEditor() {
@@ -107,7 +149,7 @@ export function createQuestion(question, removeQuestion) {
     }
 }
 
-function copyQuestion(question){
+function copyQuestion(question) {
     const currentQuestions = Object.assign({}, question);
     currentQuestions.answers = currentQuestions.answers.slice();
 
