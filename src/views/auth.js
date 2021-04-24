@@ -35,6 +35,7 @@ export async function loginPage(ctx) {
         const password = formData.get('password')
 
         await login(username, password)
+        ctx.setUserNav();
         ctx.page.redirect('/browse')
     }
 }
@@ -85,6 +86,7 @@ export async function registerPage(ctx) {
             return alert('Passwords dont match')
         }
         await register(email, username, password)
+        ctx.setUserNav();
         ctx.page.redirect('/browse')
     }
 }
