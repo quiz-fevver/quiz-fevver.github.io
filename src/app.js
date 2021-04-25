@@ -3,21 +3,39 @@ import { logout as apiLogout } from './api/data.js'
 import { editorPage } from './views/editor/editor.js'
 import { browsePage } from './views/browse.js'
 import { loginPage, registerPage } from './views/auth.js'
+import { quizPage } from './views/quiz/quiz.js'
+import { getQuizById, getQuestionByQuizId } from './api/data.js'
+import { cube } from './views/common/loader.js'
 
 
-
+const cache = {};
 const main = document.getElementById('content');
 
+
+page('/login', decorateContext, loginPage)
+page('/register', decorateContext, registerPage)
 page('/create', decorateContext, editorPage)
 page('/edit/:id', decorateContext, editorPage)
 page('/browse', decorateContext, browsePage)
-page('/login', decorateContext, loginPage)
-page('/register', decorateContext, registerPage)
+page('/quiz/:id', decorateContext, getQuiz, quizPage)
 
 page.start();
 setUserNav();
-
 document.getElementById('logoutBtn').addEventListener('click', logout);
+
+
+async function getQuiz(ctx, next) {
+    const quizId = ctx.params.id
+    if (cache[quizId] == undefined) {
+        cache[quizId] = await getQuizById(quizId)
+        const ownerId = cache[quizId].owner.objectId;
+        cache[quizId].questions = await getQuestionByQuizId(quizId, ownerId)
+
+    }
+    ctx.quiz = cache[quizId]
+    next();
+}
+
 
 function decorateContext(ctx, next) {
     ctx.render = (content) => render(content, main);
