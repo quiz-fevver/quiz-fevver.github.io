@@ -6,18 +6,25 @@ import { loginPage, registerPage } from './views/auth.js'
 import { quizPage } from './views/quiz/quiz.js'
 import { getQuizById, getQuestionByQuizId } from './api/data.js'
 import { cube } from './views/common/loader.js'
+import { resultPage } from './views/quiz/result.js'
+import { detailsPage } from './views/quiz/details.js'
+import { homePage } from './home.js'
 
 
-const cache = {};
+const state = {};
 const main = document.getElementById('content');
 
 
+page('/', decorateContext, homePage)
 page('/login', decorateContext, loginPage)
 page('/register', decorateContext, registerPage)
 page('/create', decorateContext, editorPage)
 page('/edit/:id', decorateContext, editorPage)
 page('/browse', decorateContext, browsePage)
 page('/quiz/:id', decorateContext, getQuiz, quizPage)
+page('/summary/:id', decorateContext, getQuiz, resultPage)
+page('/details/:id', decorateContext, getQuiz, detailsPage)
+
 
 page.start();
 setUserNav();
@@ -27,22 +34,22 @@ document.getElementById('logoutBtn').addEventListener('click', logout);
 async function getQuiz(ctx, next) {
     ctx.clearCache = clearCache
     const quizId = ctx.params.id
-    if (cache[quizId] == undefined) {
+    if (state[quizId] == undefined) {
         ctx.render(cube());
-        cache[quizId] = await getQuizById(quizId);
-        const ownerId = cache[quizId].owner.objectId;
-        cache[quizId].questions = await getQuestionByQuizId(quizId, ownerId)
-        cache[quizId].answers = cache[quizId].questions.map(q => undefined)
+        state[quizId] = await getQuizById(quizId);
+        const ownerId = state[quizId].owner.objectId;
+        state[quizId].questions = await getQuestionByQuizId(quizId, ownerId)
+        state[quizId].answers = state[quizId].questions.map(q => undefined)
     }
-    ctx.quiz = cache[quizId]
+    ctx.quiz = state[quizId]
     next();
 }
 
-function clearCache(quizId){
-    if(cache[quizId]){
-        delete cache[quizId]
+function clearCache(quizId) {
+    if (state[quizId]) {
+        delete state[quizId]
     }
-} 
+}
 
 
 function decorateContext(ctx, next) {

@@ -1,6 +1,8 @@
 import { html, styleMap, classMap} from '../../lib.js'
+import {submitSolution} from '../../api/data.js'
+import {cube} from '../common/loader.js'
 
-const quizTemplate = (quiz, questions,answers, currentIndex, onSelect, resetQuiz) => html`
+const quizTemplate = (quiz, questions,answers, currentIndex, onSelect, resetQuiz, onSubmit) => html`
 <section id="quiz">
     <header class="pad-large">
         <h1>${quiz.title} Question ${currentIndex + 1} / ${questions.length}</h1>
@@ -16,18 +18,19 @@ const quizTemplate = (quiz, questions,answers, currentIndex, onSelect, resetQuiz
             <p class="q-text">
                 ${questions[currentIndex].text}
             </p>
-            <form @change = ${onSelect}>
+            <form id = "quiz-form" @change = ${onSelect}>
                 ${questions.map((q, i) => questionTemplate(q, i, i == currentIndex))}
             </form>
             <nav class="q-control">
-                <span class="block">${answers.filter(a => a != undefined).length} questions remaining</span>
+                <span class="block">${answers.filter(a => a == undefined).length} questions remaining</span>
                 ${currentIndex > 0 ? html`<a class="action" href="/quiz/${quiz.objectId}?question=${currentIndex}"><i class="fas fa-arrow-left"></i> Previous</a>`
                  : ''}
                 
                 <a @click = ${resetQuiz} class="action" href="javascript:void(0)"><i class="fas fa-sync-alt"></i> Start over</a>
                 <div class="right-col">
                 ${currentIndex < questions.length - 1 ? html` <a class="action" href="/quiz/${quiz.objectId}?question=${currentIndex + 2}">Next <i class="fas fa-arrow-right"></i></a>` : ''}    
-                <a class="action" href=#>Submit answers</a>
+                ${(answers.filter(a => a == undefined).length == 0 || currentIndex == questions.length - 1)
+                ? html`<a @click=${onSubmit} class="action" href="javascript:void(0)">Submit answers</a>` : ''}
                 </div>
             </nav>
         </article>
@@ -84,8 +87,33 @@ export async function quizPage(ctx) {
         }
     }
 
+    async function onSubmit(){
+        const unAnswered = answers.filter(a => a == undefined).length;
+        if(unAnswered > 0 ){
+            const confirmed = confirm(`They are ${unAnswered} questions. Do you want to continue ? `);
+            if(confirmed == false){
+                return;
+            }
+        }
+
+        let correct = 0;
+        for (let i = 0; i < questions.length; i++) {
+           if(questions[i].correctIndex == answers[i]){
+            correct++;
+           }       
+            
+        }
+        const solution = {
+            correct,
+            total: questions.length,
+        }
+        ctx.render(cube());
+        await submitSolution(ctx.quiz.objectId, solution);
+        ctx.page.redirect('/summary/' + ctx.quiz.objectId);
+    }
+
     function update(){
-        ctx.render(quizTemplate(ctx.quiz,questions,answers,index, onSelect,resetQuiz));
+        ctx.render(quizTemplate(ctx.quiz,questions,answers,index, onSelect,resetQuiz,onSubmit));
     }
 }
 

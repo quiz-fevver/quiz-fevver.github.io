@@ -26,3 +26,12 @@ export const cube = () => html`
     </div>
 </div>
 `
+
+export const line = () => html`
+<div class="spinner black">
+    <div class="rect1"></div>
+    <div class="rect2"></div>
+    <div class="rect3"></div>
+    <div class="rect4"></div>
+    <div class="rect5"></div>
+</div>`;
