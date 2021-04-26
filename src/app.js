@@ -8,7 +8,7 @@ import { getQuizById, getQuestionByQuizId } from './api/data.js'
 import { cube } from './views/common/loader.js'
 import { resultPage } from './views/quiz/result.js'
 import { detailsPage } from './views/quiz/details.js'
-import { homePage } from './home.js'
+import { homePage } from './views/home.js'
 
 
 const state = {};

@@ -1,9 +1,9 @@
-import { html, until } from './lib.js';
+import { html, until } from '../lib.js';
 
-import { topics } from './lib.js';
-import { getMostRecent, getStats } from './api/data.js';
-import { cube, line } from './views/common/loader.js';
-import { quizTemplate } from './views/common/quiz-preview.js';
+import { topics } from '../lib.js';
+import { getMostRecent, getStats } from '../api/data.js';
+import { cube, line } from './common/loader.js';
+import { quizTemplate } from './common/quiz-preview.js';
 
 const homeTemplate = () => html`<section id="welcome">
     <div class="hero layout">
