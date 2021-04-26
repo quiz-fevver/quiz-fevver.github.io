@@ -1,12 +1,12 @@
-import { html, styleMap, classMap,} from '../../lib.js'
+import { html, styleMap, classMap} from '../../lib.js'
 
-const quizTemplate = (quiz, questions, currentIndex) => html`
+const quizTemplate = (quiz, questions,answers, currentIndex, onSelect, resetQuiz) => html`
 <section id="quiz">
     <header class="pad-large">
         <h1>${quiz.title} Question ${currentIndex + 1} / ${questions.length}</h1>
         <nav class="layout q-control">
             <span class="block">Question index</span>
-            ${questions.map((q,i)=> indexTemplate(quiz.objectId,i, i == currentIndex))}
+            ${questions.map((q,i)=> indexTemplate(quiz.objectId,i, i == currentIndex, answers[i] != undefined))}
 
         </nav>
     </header>
@@ -16,16 +16,18 @@ const quizTemplate = (quiz, questions, currentIndex) => html`
             <p class="q-text">
                 ${questions[currentIndex].text}
             </p>
-            <form>
+            <form @change = ${onSelect}>
                 ${questions.map((q, i) => questionTemplate(q, i, i == currentIndex))}
             </form>
             <nav class="q-control">
-                <span class="block">12 questions remaining</span>
-                <a class="action" href=#><i class="fas fa-arrow-left"></i> Previous</a>
-                <a class="action" href=#><i class="fas fa-sync-alt"></i> Start over</a>
+                <span class="block">${answers.filter(a => a != undefined).length} questions remaining</span>
+                ${currentIndex > 0 ? html`<a class="action" href="/quiz/${quiz.objectId}?question=${currentIndex}"><i class="fas fa-arrow-left"></i> Previous</a>`
+                 : ''}
+                
+                <a @click = ${resetQuiz} class="action" href="javascript:void(0)"><i class="fas fa-sync-alt"></i> Start over</a>
                 <div class="right-col">
-                    <a class="action" href=#>Next <i class="fas fa-arrow-right"></i></a>
-                    <a class="action" href=#>Submit answers</a>
+                ${currentIndex < questions.length - 1 ? html` <a class="action" href="/quiz/${quiz.objectId}?question=${currentIndex + 2}">Next <i class="fas fa-arrow-right"></i></a>` : ''}    
+                <a class="action" href=#>Submit answers</a>
                 </div>
             </nav>
         </article>
@@ -62,7 +64,29 @@ return html`<a class=${classMap(className)} href="/quiz/${quizId}?question=${i +
 export async function quizPage(ctx) {
     const index = Number(ctx.querystring.split('=')[1] || 1) - 1;
     const questions = ctx.quiz.questions
-    ctx.render(quizTemplate(ctx.quiz,questions,index));
+    const answers = ctx.quiz.answers
+    update();
+
+    function onSelect(event){
+        const quiestionIndex = Number(event.target.name.split('-')[1]);
+        if(Number.isNaN(quiestionIndex) != true){
+            const answer = Number(event.target.value);
+            answers[quiestionIndex] = answer;
+            update();
+        }
+    }
+
+    function resetQuiz(){
+        const confirmed = confirm('Are you sure you want to reset your answers');
+        if(confirmed){
+            ctx.clearCache(ctx.quiz.objectId);
+            ctx.page.redirect('/quiz/' + ctx.quiz.objectId)
+        }
+    }
+
+    function update(){
+        ctx.render(quizTemplate(ctx.quiz,questions,answers,index, onSelect,resetQuiz));
+    }
 }
 
 

@@ -25,16 +25,24 @@ document.getElementById('logoutBtn').addEventListener('click', logout);
 
 
 async function getQuiz(ctx, next) {
+    ctx.clearCache = clearCache
     const quizId = ctx.params.id
     if (cache[quizId] == undefined) {
-        cache[quizId] = await getQuizById(quizId)
+        ctx.render(cube());
+        cache[quizId] = await getQuizById(quizId);
         const ownerId = cache[quizId].owner.objectId;
         cache[quizId].questions = await getQuestionByQuizId(quizId, ownerId)
-
+        cache[quizId].answers = cache[quizId].questions.map(q => undefined)
     }
     ctx.quiz = cache[quizId]
     next();
 }
+
+function clearCache(quizId){
+    if(cache[quizId]){
+        delete cache[quizId]
+    }
+} 
 
 
 function decorateContext(ctx, next) {
